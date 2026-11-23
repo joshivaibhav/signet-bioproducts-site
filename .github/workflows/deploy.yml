@@ -1,0 +1,154 @@
+name: Deploy
+
+# Applies infra/ and publishes the built site on every merge to main.
+# AWS access is via GitHub OIDC: the deploy role (infra/bootstrap) trusts
+# only jobs running in the `production` environment of this repository.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-2
+  TF_VERSION: 1.16.5
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+jobs:
+  terraform:
+    name: Terraform apply
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: infra
+    outputs:
+      site_bucket: ${{ steps.out.outputs.site_bucket }}
+      distribution_id: ${{ steps.out.outputs.distribution_id }}
+      site_url: ${{ steps.out.outputs.site_url }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform init
+        run: |
+          account_id="$(aws sts get-caller-identity --query Account --output text)"
+          terraform init -backend-config="bucket=packaging-site-tfstate-${account_id}"
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        run: terraform plan -out=tfplan
+
+      - name: Terraform apply
+        run: terraform apply tfplan
+
+      - name: Read outputs
+        id: out
+        run: |
+          {
+            echo "site_bucket=$(terraform output -raw site_bucket)"
+            echo "distribution_id=$(terraform output -raw distribution_id)"
+            echo "site_url=$(terraform output -raw site_url)"
+          } >> "$GITHUB_OUTPUT"
+
+  site:
+    name: Build and publish site
+    needs: terraform
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: ${{ needs.terraform.outputs.site_url }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      SITE_BUCKET: ${{ needs.terraform.outputs.site_bucket }}
+      DISTRIBUTION_ID: ${{ needs.terraform.outputs.distribution_id }}
+      SITE_URL: ${{ needs.terraform.outputs.site_url }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run check
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Hashed assets first (safe to cache forever), then HTML and other
+      # files (always revalidated). Old hashed assets are kept so pages
+      # cached in browsers keep working.
+      - name: Upload to S3
+        run: |
+          if [ -d dist/_astro ]; then
+            aws s3 sync dist/_astro "s3://${SITE_BUCKET}/_astro" \
+              --cache-control "public, max-age=31536000, immutable"
+          fi
+          aws s3 sync dist "s3://${SITE_BUCKET}" --delete \
+            --exclude "_astro/*" \
+            --cache-control "public, max-age=0, must-revalidate"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${DISTRIBUTION_ID}" \
+            --paths "/*" \
+            --query 'Invalidation.Id' --output text
+
+      - name: Summary
+        run: echo "Deployed to ${SITE_URL}" >> "$GITHUB_STEP_SUMMARY"
