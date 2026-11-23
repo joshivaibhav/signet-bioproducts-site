@@ -8,7 +8,8 @@ const CONFIG_FILE = join("src", "config", "site.ts");
 const SCAN_DIRS = ["src", "public"];
 
 function walk(dir: string): string[] {
-  // Empty dirs (e.g. public/) aren't tracked by git, so may be absent in CI.
+  // Git doesn't track empty dirs, so a scan dir (e.g. public/) can be absent
+  // on a fresh clone if all its files are removed.
   if (!existsSync(dir)) return [];
   return readdirSync(dir).flatMap((entry) => {
     const path = join(dir, entry);
