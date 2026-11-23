@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import { site } from "../src/config/site";
@@ -8,6 +8,8 @@ const CONFIG_FILE = join("src", "config", "site.ts");
 const SCAN_DIRS = ["src", "public"];
 
 function walk(dir: string): string[] {
+  // Empty dirs (e.g. public/) aren't tracked by git, so may be absent in CI.
+  if (!existsSync(dir)) return [];
   return readdirSync(dir).flatMap((entry) => {
     const path = join(dir, entry);
     return statSync(path).isDirectory() ? walk(path) : [path];
