@@ -23,3 +23,13 @@ cdk.out/
 
 # Astro
 .astro/
+
+# Terraform (keep .terraform.lock.hcl)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+*.tfvars
+!*.tfvars.example
