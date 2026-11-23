@@ -1,0 +1,13 @@
+---
+import { site } from "../config/site";
+import { robotsMetaContent } from "../lib/robots";
+
+interface Props {
+  /** Defaults to `site.indexable`. Overridable for tests. */
+  indexable?: boolean;
+}
+
+const { indexable = site.indexable } = Astro.props;
+---
+
+<meta name="robots" content={robotsMetaContent(indexable)} />
