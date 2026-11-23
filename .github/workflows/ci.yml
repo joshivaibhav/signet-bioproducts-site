@@ -42,3 +42,38 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  terraform:
+    name: Terraform fmt and validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # No AWS credentials: validates syntax and references only, so it is
+    # safe to run on pull requests from forks.
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.16.5
+          terraform_wrapper: false
+
+      - name: Terraform fmt
+        run: |
+          if [ -d infra ]; then
+            terraform fmt -check -recursive infra
+          fi
+
+      - name: Terraform validate
+        run: |
+          for dir in infra infra/bootstrap; do
+            if ls "$dir"/*.tf >/dev/null 2>&1; then
+              echo "::group::validate $dir"
+              terraform -chdir="$dir" init -backend=false
+              terraform -chdir="$dir" validate
+              echo "::endgroup::"
+            fi
+          done
