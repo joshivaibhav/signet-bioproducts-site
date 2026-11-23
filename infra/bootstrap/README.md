@@ -48,3 +48,20 @@ gh variable set AWS_DEPLOY_ROLE_ARN --body "$(terraform output -raw deploy_role_
 ```
 
 The role ARN is not secret, so a variable (not a secret) is fine.
+
+## OIDC subject format
+
+This repository uses GitHub's **immutable** OIDC subject format, so the token's
+`sub` claim looks like
+`repo:<owner>@<owner_id>/<repo>@<repo_id>:environment:production`, not
+`repo:<owner>/<repo>:environment:production`. The trust policy must match it
+exactly, or deploys fail with
+`Not authorized to perform sts:AssumeRoleWithWebIdentity`.
+
+The prefix lives in `var.github_oidc_subject_prefix`. To check the current
+value:
+
+```sh
+gh api repos/joshivaibhav/signet-bioproducts-site/actions/oidc/customization/sub \
+  -q .sub_claim_prefix
+```
