@@ -1,0 +1,54 @@
+---
+/**
+ * Simple line drawings of the product types. Decorative: the visible label
+ * next to each drawing carries the meaning, so the SVG is aria-hidden.
+ */
+interface Props {
+  kind: "bag" | "cup" | "container" | "plate";
+  class?: string;
+}
+
+const { kind, class: className } = Astro.props;
+---
+
+<svg
+  viewBox="0 0 120 120"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2.5"
+  stroke-linejoin="round"
+  stroke-linecap="round"
+  aria-hidden="true"
+  class={className}
+>
+  {kind === "bag" && (
+    <>
+      <path d="M32 36 L88 36 L92 106 L28 106 Z" class="fill-kraft" />
+      <path d="M32 36 L37 28 L42 36 L47 28 L52 36 L57 28 L62 36 L67 28 L72 36 L77 28 L82 36 L88 28 L88 36" />
+      <path d="M28 106 L36 96 L84 96 L92 106" />
+      <path d="M44 60 h32" />
+    </>
+  )}
+  {kind === "cup" && (
+    <>
+      <path d="M30 26 h60 l-2 10 h-56 Z" class="fill-paper" />
+      <path d="M34 36 L86 36 L78 106 L42 106 Z" class="fill-paper" />
+      <path d="M37 56 L83 56 L80 80 L40 80 Z" class="fill-kraft" />
+      <path d="M54 26 v-6 h12 v6" />
+    </>
+  )}
+  {kind === "container" && (
+    <>
+      <path d="M20 66 L32 40 L88 40 L100 66 Z" class="fill-sage" />
+      <path d="M20 66 L100 66 L92 98 L28 98 Z" class="fill-paper" />
+      <path d="M30 82 h60" />
+      <path d="M54 66 v-4 h12 v4" />
+    </>
+  )}
+  {kind === "plate" && (
+    <>
+      <ellipse cx="60" cy="74" rx="46" ry="20" class="fill-paper" />
+      <ellipse cx="60" cy="72" rx="30" ry="11" class="fill-sage" />
+    </>
+  )}
+</svg>
