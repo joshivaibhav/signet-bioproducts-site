@@ -1,0 +1,8 @@
+dist/
+.astro/
+node_modules/
+package-lock.json
+
+# Hand-maintained docs
+CLAUDE.md
+.github/pull_request_template.md

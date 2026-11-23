@@ -20,3 +20,6 @@ cdk.out/
 
 # Logs
 *.log
+
+# Astro
+.astro/
