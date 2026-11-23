@@ -1,0 +1,110 @@
+---
+import { site } from "../config/site";
+import { isCurrent, mainNav, quoteHref } from "../config/navigation";
+import ButtonLink from "./ButtonLink.astro";
+
+interface Props {
+  currentPath: string;
+}
+
+const { currentPath } = Astro.props;
+---
+
+<header class="border-b border-line">
+  <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-4 sm:px-6">
+    <a
+      href="/"
+      class="font-display text-xl font-bold tracking-tight whitespace-nowrap"
+    >
+      {site.name}
+    </a>
+
+    <nav aria-label="Main" class="hidden lg:block">
+      <ul class="flex gap-7 text-sm font-medium">
+        {mainNav.map((item) => (
+          <li>
+            <a
+              href={item.href}
+              aria-current={
+                isCurrent(item.href, currentPath) ? "page" : undefined
+              }
+              class="underline-offset-8 hover:underline aria-[current=page]:text-moss aria-[current=page]:underline aria-[current=page]:decoration-2"
+            >
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="flex items-center gap-3">
+      <div class="hidden sm:block">
+        <ButtonLink href={quoteHref}>Request a Quote</ButtonLink>
+      </div>
+      <button
+        type="button"
+        class="rounded-full border border-ink px-4 py-2 text-sm font-semibold lg:hidden"
+        aria-expanded="false"
+        aria-controls="mobile-nav"
+        data-nav-toggle
+      >
+        Menu
+      </button>
+    </div>
+  </div>
+
+  <nav
+    id="mobile-nav"
+    aria-label="Main"
+    class="hidden border-t border-line lg:hidden"
+    data-nav-panel
+  >
+    <ul class="mx-auto flex max-w-6xl flex-col px-4 py-2 sm:px-6">
+      {mainNav.map((item) => (
+        <li>
+          <a
+            href={item.href}
+            aria-current={
+              isCurrent(item.href, currentPath) ? "page" : undefined
+            }
+            class="block py-3 font-medium aria-[current=page]:text-moss"
+          >
+            {item.label}
+          </a>
+        </li>
+      ))}
+      <li class="py-3 sm:hidden">
+        <ButtonLink href={quoteHref} class="w-full">
+          Request a Quote
+        </ButtonLink>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>("[data-nav-toggle]");
+  const panel = document.querySelector<HTMLElement>("[data-nav-panel]");
+
+  if (toggle && panel) {
+    const setOpen = (open: boolean) => {
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.textContent = open ? "Close" : "Menu";
+      panel.classList.toggle("hidden", !open);
+    };
+
+    toggle.addEventListener("click", () => {
+      setOpen(toggle.getAttribute("aria-expanded") !== "true");
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (
+        event.key === "Escape" &&
+        toggle.getAttribute("aria-expanded") === "true"
+      ) {
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+  }
+</script>
