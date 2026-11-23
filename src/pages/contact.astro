@@ -1,0 +1,18 @@
+---
+import PlaceholderPage from "../components/PlaceholderPage.astro";
+import { site } from "../config/site";
+---
+
+<PlaceholderPage title="Contact">
+  <!-- TODO(copy): contact details and the quote/sample request form (backend comes later). -->
+  <p>A form for quote and sample requests is coming soon.</p>
+  <p class="mt-4">
+    In the meantime, email us:{" "}
+    <a
+      href={`mailto:${site.contactEmail}`}
+      class="font-medium text-moss underline underline-offset-4"
+    >
+      {site.contactEmail}
+    </a>
+  </p>
+</PlaceholderPage>

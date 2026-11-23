@@ -1,1 +1,37 @@
 @import "tailwindcss";
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/instrument-sans";
+
+/*
+ * Design tokens. Palette drawn from the packaging itself: unbleached paper,
+ * kraft board, molded fibre, and the deep green ink printed on bags.
+ * Kraft is decorative only (fails text contrast on paper); use moss or ink for text.
+ */
+@theme {
+  --color-paper: #f7f6f1;
+  --color-sage: #e4e8de;
+  --color-line: #cbd1c3;
+  --color-kraft: #a87b4f;
+  --color-moss: #4f6340;
+  --color-ink: #1e2b24;
+
+  --font-display:
+    "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    @apply bg-paper font-sans text-ink antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display text-balance;
+  }
+
+  :focus-visible {
+    @apply rounded-sm outline-2 outline-offset-2 outline-moss;
+  }
+}
