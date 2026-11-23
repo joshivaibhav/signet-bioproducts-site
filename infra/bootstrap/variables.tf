@@ -10,10 +10,21 @@ variable "region" {
   default     = "us-east-2"
 }
 
-variable "github_repository" {
-  description = "GitHub repository (owner/name) allowed to assume the deploy role."
+variable "github_oidc_subject_prefix" {
+  description = <<-EOT
+    Repository part of the GitHub OIDC `sub` claim. This repo uses GitHub's
+    immutable subject format (owner and repo names plus their numeric IDs),
+    which survives renames and can't be claimed by a re-created repo of the
+    same name. Look it up with:
+      gh api repos/<owner>/<repo>/actions/oidc/customization/sub -q .sub_claim_prefix
+  EOT
   type        = string
-  default     = "joshivaibhav/signet-bioproducts-site"
+  default     = "repo:joshivaibhav@20138992/signet-bioproducts-site@1468136744"
+
+  validation {
+    condition     = startswith(var.github_oidc_subject_prefix, "repo:")
+    error_message = "Must start with \"repo:\"."
+  }
 }
 
 variable "github_environment" {
